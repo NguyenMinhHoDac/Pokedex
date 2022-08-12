@@ -18,6 +18,7 @@ class EvolutionViewController: UIViewController {
     private var oldContentOffset = CGPoint.zero
     var evolutionChain = [Evolution]()
     var pokemons = [Pokemon]()
+    var check = true
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -69,7 +70,7 @@ class EvolutionViewController: UIViewController {
 //            self.pokemons.insert(pokemon, at: self.pokemons.count)
             
             self.pokemons.append(pokemon)
-            self.pokemons = self.pokemons.sorted { $0.id < $1.id }
+            //self.pokemons = self.pokemons.sorted { $0.id < $1.id }
             self.tableView.reloadData()
         }
     }
@@ -80,16 +81,16 @@ class EvolutionViewController: UIViewController {
             .responseDecodable(of: SpeciesProp.self)
         {
             (response) in guard let items = response.value else { return }
-            if(items.varieties.count > 1)
+            if ((items.varieties.count > 1) && items.varieties.first(where: { $0.pokemon.name.contains("mega") || $0.pokemon.name.contains("gmax")}) != nil)
             {
-                if (items.varieties.first(where: { $0.pokemon.name.contains("mega") || $0.pokemon.name.contains("gmax")}) != nil)
-                {
-                    self.fetchImg(name: items.varieties.first(where: { $0.pokemon.name.contains("mega") || $0.pokemon.name.contains("gmax")})!.pokemon.name)
-                }
-                else
-                {
-                    self.evolutionChain.removeLast()
-                }
+                print("true \(self.evolutionChain.count)")
+                self.fetchImg(name: items.varieties.first(where: { $0.pokemon.name.contains("mega") || $0.pokemon.name.contains("gmax")})!.pokemon.name)
+            }
+            else
+            {
+                print("delete \(self.evolutionChain.count)")
+                self.check = false
+                self.evolutionChain.removeLast()
             }
             self.tableView.reloadData()
         }
@@ -106,7 +107,20 @@ extension EvolutionViewController: UITableViewDelegate, UITableViewDataSource
     
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         let cell = tableView.dequeueReusableCell(withIdentifier: "EvolutionTableViewCell", for: indexPath) as! EvolutionTableViewCell
-        if (indexPath.row != evolutionChain.count - 1)
+        if (indexPath.row == evolutionChain.count - 1 && check == true)
+        {
+            if (pokemons.count > evolutionChain.count)
+            {
+                cell.name1.text = pokemons[indexPath.row].name.capitalized
+                cell.name2.text = pokemons[indexPath.row + 1].name.capitalized.replacingOccurrences(of: "-", with: " ", options: .literal, range: nil)
+                loadingImg(imageView: cell.img1, url: pokemons[indexPath.row].sprites.other.official.img)
+                loadingImg(imageView: cell.img2, url: pokemons[indexPath.row + 1].sprites.other.official.img)
+                cell.level.text = (pokemons[indexPath.row + 1].name.contains("mega"))
+                    ? "Mega Stone"
+                    : (pokemons[indexPath.row + 1].name.contains("gmax")) ? "Gmax" : ""
+            }
+        }
+        else
         {
 //            cell.name1.text = evolutionChain[indexPath.row].species.name.capitalized
 //            cell.name2.text = evolutionChain[indexPath.row].evolvesTo[0].species.name.capitalized
@@ -122,19 +136,6 @@ extension EvolutionViewController: UITableViewDelegate, UITableViewDataSource
                 : (evolutionChain[indexPath.row].evolvesTo[0].evolutionDetails[0].item != nil)
                     ? (evolutionChain[indexPath.row].evolvesTo[0].evolutionDetails[0].item!.name.capitalized.replacingOccurrences(of: "-", with: " ", options: .literal, range: nil))
                     : ("Happiness " + String(evolutionChain[indexPath.row].evolvesTo[0].evolutionDetails[0].happiness!))
-        }
-        else
-        {
-            if (pokemons.count > evolutionChain.count)
-            {
-                cell.name1.text = pokemons[indexPath.row].name.capitalized
-                cell.name2.text = pokemons[indexPath.row + 1].name.capitalized.replacingOccurrences(of: "-", with: " ", options: .literal, range: nil)
-                loadingImg(imageView: cell.img1, url: pokemons[indexPath.row].sprites.other.official.img)
-                loadingImg(imageView: cell.img2, url: pokemons[indexPath.row + 1].sprites.other.official.img)
-                cell.level.text = (pokemons[indexPath.row + 1].name.contains("mega"))
-                    ? "Mega Stone"
-                    : (pokemons[indexPath.row + 1].name.contains("gmax")) ? "Gmax" : ""
-            }
         }
         return cell
     }
