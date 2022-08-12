@@ -7,5 +7,8 @@ target 'Pokedex' do
 
     # Network for Music-Streaming
 	pod 'Alamofire'
-
+  	pod 'BetterSegmentedControl', '~> 2.0'
+  	pod 'Kingfisher'
+ 	pod 'ALProgressView'
+  
 end
